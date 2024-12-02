@@ -30,6 +30,7 @@ public:
 	{
 		const int N = bodies.size() / 4 * 4;
 
+		#pragma omp parallel for num_threads(4)
 		for (int i = 0; i < N; i += 4)
 		{
 			getAcceleration(i);

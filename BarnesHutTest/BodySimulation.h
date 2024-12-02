@@ -27,16 +27,13 @@ public:
 
 		for (int i = 0; i < collisionPrecision; i++)
 			collision_handler.handleCollisions();
-		float collisions = clock.restart().asMilliseconds();
 
 		bh.applyGravity();
-		float gravity = clock.restart().asMilliseconds();
 
 		for (Body& body : bodies)
 		{
 			body.update(dt);
 		}
-		float body_update = clock.restart().asMilliseconds();
 		for (int i = 0; i < bodies.size(); i++)
 		{
 			if (!bodies[i].enabled)
@@ -45,8 +42,6 @@ public:
 				i--;
 			}
 		}
-		std::cout << "tree creation = " << tree_creation << ", collisions = " << collisions << ", gravity = " << gravity << ", update = " << body_update << std::endl;
-
 	}
 
 	void draw(sf::RenderWindow& window)

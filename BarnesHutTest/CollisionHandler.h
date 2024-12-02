@@ -16,21 +16,44 @@ public:
 	{
 		// Assumes the quad tree has already been updated to the current frame
 
-		const int N = bodies.size();
-
-		#pragma omp parallel for
-		for (int i = 0; i < N; i++)
+		/*for (int i = 0; i < bodies.size(); i++)
 		{
-			bodies[i].new_center = bodies[i].center;
 			handleCollisionForBody(i, tree.nodes[0]);
+			if (!bodies[i].enabled)
+			{
+				bodies.erase(bodies.begin() + i);
+				i--;
+			}
+		}*/
+
+		int N = bodies.size();
+
+		#pragma omp parallel num_threads(4)
+		{
+			int i = omp_get_thread_num();
+			int start = (i == 0) ? 0 : tree.nodes[0].splits[i - 1];
+			int end = (i == 3) ? N : tree.nodes[0].splits[i];
+			for (int j = start; j < end; j++)
+				handleCollisionForBody(j, tree.nodes[1 + i]);
 		}
 
+		float max_radius = tree.nodes[0].maxRadius;
+		std::vector<bool> on_center(bodies.size(), false);
+		sf::Vector2f center = tree.nodes[0].top_left + (tree.nodes[0].bottom_right - tree.nodes[0].top_left) / 2.0f;
+		for (int i = 0; i < N; i++)
+		{
+			if (std::min(abs(bodies[i].center.x - center.x), abs(bodies[i].center.y - center.y)) < bodies[i].radius + max_radius)
+			{
+				on_center[i] = true;
+			}
+		}
 
-		for (int i = 0; i < bodies.size(); i++) {
-			bodies[i].center = bodies[i].new_center;
-			bodies[i].checkForNan();
-
-			if (!bodies[i].enabled) {
+		for (int i = 0; i < bodies.size(); i++)
+		{
+			if (on_center[i])
+				handleCollisionForBody(i, tree.nodes[0]);
+			if (!bodies[i].enabled)
+			{
 				bodies.erase(bodies.begin() + i);
 				i--;
 			}
