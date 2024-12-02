@@ -79,7 +79,7 @@ namespace Screen
 namespace Constants
 {
 	const float G = 6.67e-11f;
-	const int FPS = 60;
+	const int FPS = 30;
 	const float dt = 0.005f;
 	const float PI = 3.1415;
 

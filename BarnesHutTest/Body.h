@@ -6,7 +6,7 @@
 class alignas(64) Body
 {
 public:
-	sf::Vector2f center, prev_center;
+	sf::Vector2f center, prev_center, new_center;
 	float mass, radius;
 
 	sf::CircleShape* circle = new sf::CircleShape();
@@ -111,7 +111,7 @@ public:
 			return;
 		if (fixed && other.fixed)
 			return;
-		float dx = other.center.x - center.x, dy = other.center.y - center.y;
+		float dx = other.center.x - new_center.x, dy = other.center.y - new_center.y;
 		float min_distance = radius + other.radius;
 		float distance = std::sqrt(dx * dx + dy * dy);
 		if (distance > min_distance)
@@ -128,15 +128,7 @@ public:
 			mass_ratio = 1;
 		else
 		{
-			center.x -= vec_distance_to_add.x * (1 - mass_ratio);
-			center.y -= vec_distance_to_add.y * (1 - mass_ratio);
-			checkForNan();
-		}
-		if (!other.fixed)
-		{
-			other.center.x += vec_distance_to_add.x * mass_ratio;
-			other.center.y += vec_distance_to_add.y * mass_ratio;
-			other.checkForNan();
+			new_center -= sf::Vector2f(vec_distance_to_add.x * (1 - mass_ratio), vec_distance_to_add.y * (1 - mass_ratio));
 		}
 	}
 };
