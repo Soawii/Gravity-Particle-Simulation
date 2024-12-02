@@ -16,46 +16,47 @@ public:
 	{
 		// Assumes the quad tree has already been updated to the current frame
 
-		/*for (int i = 0; i < bodies.size(); i++)
-		{
-			handleCollisionForBody(i, tree.nodes[0]);
-			if (!bodies[i].enabled)
-			{
-				bodies.erase(bodies.begin() + i);
-				i--;
-			}
-		}*/
-
-		int N = bodies.size();
-
-		#pragma omp parallel num_threads(4)
-		{
-			int i = omp_get_thread_num();
-			int start = (i == 0) ? 0 : tree.nodes[0].splits[i - 1];
-			int end = (i == 3) ? N : tree.nodes[0].splits[i];
-			for (int j = start; j < end; j++)
-				handleCollisionForBody(j, tree.nodes[1 + i]);
-		}
-
-		float max_radius = tree.nodes[0].maxRadius;
-		std::vector<bool> on_center(bodies.size(), false);
-		sf::Vector2f center = tree.nodes[0].top_left + (tree.nodes[0].bottom_right - tree.nodes[0].top_left) / 2.0f;
-		for (int i = 0; i < N; i++)
-		{
-			if (std::min(abs(bodies[i].center.x - center.x), abs(bodies[i].center.y - center.y)) < bodies[i].radius + max_radius)
-			{
-				on_center[i] = true;
+		std::vector<int> leafs;
+		for (int i = 0; i < tree.nodes.size(); i++) {
+			if (tree.nodes[i].isLeaf() && !tree.nodes[i].isEmpty()) {
+				leafs.push_back(i);
 			}
 		}
 
-		for (int i = 0; i < bodies.size(); i++)
-		{
-			if (on_center[i])
-				handleCollisionForBody(i, tree.nodes[0]);
-			if (!bodies[i].enabled)
-			{
-				bodies.erase(bodies.begin() + i);
-				i--;
+		std::vector<int> edge_bodies;
+		for (int i = 0; i < leafs.size(); i++) {
+			for (int j = tree.nodes[leafs[i]].start; j < tree.nodes[leafs[i]].end; j++) {
+				float x_d = std::min(bodies[j].center.x - tree.nodes[leafs[i]].top_left.x, tree.nodes[leafs[i]].bottom_right.x - bodies[j].center.x);
+				float y_d = std::min(bodies[j].center.y - tree.nodes[leafs[i]].top_left.y, tree.nodes[leafs[i]].bottom_right.y - bodies[j].center.y);
+				if (x_d < bodies[j].radius || y_d < bodies[j].radius) {
+					edge_bodies.push_back(j);
+				}
+			}
+		}
+
+		const int N = leafs.size() / 4 * 4;
+
+		#pragma parallel for
+		for (int i = 0; i < N; i += 4) {
+			handleCollisionInLeaf(tree.nodes[leafs[i]]);
+			handleCollisionInLeaf(tree.nodes[leafs[i + 1]]);
+			handleCollisionInLeaf(tree.nodes[leafs[i + 2]]);
+			handleCollisionInLeaf(tree.nodes[leafs[i + 3]]);
+		}
+
+		for (int i = 0; i < leafs.size() % 4; i++) {
+			handleCollisionInLeaf(tree.nodes[leafs[leafs.size() - 1 - i]]);
+		}
+
+		for (int i = 0; i < edge_bodies.size(); i++) {
+			handleCollisionForBody(edge_bodies[i], tree.nodes[0]);
+		}
+	}
+
+	void handleCollisionInLeaf(const Node& node) const {
+		for (int i = node.start; i < node.end - 1; i++) {
+			for (int j = i + 1; j < node.end; j++) {
+				bodies[i].handleCollision(bodies[j]);
 			}
 		}
 	}
