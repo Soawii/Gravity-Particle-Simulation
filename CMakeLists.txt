@@ -24,23 +24,11 @@ set(SFML_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(SFML_BUILD_TEST_SUITE OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(sfml)
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    message(STATUS "OpenMP found — enabling parallelization.")
-    set(OpenMP_FLAGS ${OpenMP_CXX_FLAGS})
-    set(OpenMP_LIBS ${OpenMP_CXX_LIBRARIES})
-else()
-    message(WARNING "OpenMP not found — building without parallelization.")
-    set(OpenMP_FLAGS "")
-    set(OpenMP_LIBS "")
-endif()
-
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/GravitySimulation/bin)
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 add_executable(GravitySimulation ${SOURCES})
 
-target_link_libraries(GravitySimulation PRIVATE sfml-graphics sfml-window sfml-system ${OpenMP_LIBS})
-target_compile_options(GravitySimulation PRIVATE ${OpenMP_FLAGS})
+target_link_libraries(GravitySimulation PRIVATE sfml-graphics sfml-window sfml-system)
 
 set_target_properties(GravitySimulation PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY_DEBUG   ${CMAKE_BINARY_DIR}/GravitySimulation/bin

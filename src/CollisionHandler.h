@@ -2,7 +2,7 @@
 #include "BodySimulation.h"
 #include "Body.h"
 #include <vector>
-#include <omp.h>
+#include <thread>
 
 class CollisionHandler 
 {
@@ -12,7 +12,7 @@ public:
 
 	CollisionHandler(std::vector<Body>& bodies, QuadTree& tree) : bodies(bodies), tree(tree) {}
 
-	void handleCollisions() const
+	void handleCollisions(int num_threads) const
 	{
 		// Assumes the quad tree has already been updated to the current frame
 
@@ -34,18 +34,25 @@ public:
 			}
 		}
 
-		const int N = leafs.size() / 4 * 4;
-
-		#pragma parallel for
-		for (int i = 0; i < N; i += 4) {
-			handleCollisionInLeaf(tree.nodes[leafs[i]]);
-			handleCollisionInLeaf(tree.nodes[leafs[i + 1]]);
-			handleCollisionInLeaf(tree.nodes[leafs[i + 2]]);
-			handleCollisionInLeaf(tree.nodes[leafs[i + 3]]);
+		const int batch_size = leafs.size() / num_threads;
+		if (batch_size > 0) {
+			std::vector<std::thread> threads;
+			for (int i = 0; i < num_threads; i++)
+			{
+				const int start = i * batch_size, end = (i + 1) * batch_size;
+				threads.emplace_back([this, &leafs, start, end]() {
+					for (int i = start; i < end; i++) {
+						handleCollisionInLeaf(tree.nodes[leafs[i]]);
+					}
+				});
+			}
+			for (int i = 0; i < num_threads; i++) {
+				threads[i].join();
+			}
 		}
-
-		for (int i = 0; i < leafs.size() % 4; i++) {
-			handleCollisionInLeaf(tree.nodes[leafs[leafs.size() - 1 - i]]);
+		for (int i = 0; i < int(leafs.size()) % num_threads; i++)
+		{
+			handleCollisionInLeaf(tree.nodes[leafs[int(leafs.size()) - 1 - i]]);
 		}
 
 		for (int i = 0; i < edge_bodies.size(); i++) {

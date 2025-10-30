@@ -1,7 +1,6 @@
 #pragma once
 #include <SFML/Graphics.hpp>
 #include <vector>
-#include <omp.h>
 #include <cmath>
 #include "Body.h"
 #include "Screen.h"
@@ -26,22 +25,27 @@ public:
 		head.build();
 	}
 
-	void applyGravity() const
+	void applyGravity(int num_threads) const
 	{
-		const int N = bodies.size() / 4 * 4;
-
-		#pragma omp parallel for num_threads(4)
-		for (int i = 0; i < N; i += 4)
-		{
-			getAcceleration(i);
-			getAcceleration(i + 1);
-			getAcceleration(i + 2);
-			getAcceleration(i + 3);
+		const int batch_size = bodies.size() / num_threads;
+		if (batch_size > 0) {
+			std::vector<std::thread> threads;
+			for (int i = 0; i < num_threads; i++)
+			{
+				const int start = i * batch_size, end = (i + 1) * batch_size;
+				threads.emplace_back([this, start, end]() {
+					for (int i = start; i < end; i++) {
+						getAcceleration(i);
+					}
+				});
+			}
+			for (int i = 0; i < num_threads; i++) {
+				threads[i].join();
+			}
 		}
-
-		for (int i = 0; i < bodies.size() % 4; i++)
+		for (int i = 0; i < int(bodies.size()) % num_threads; i++)
 		{
-			getAcceleration(bodies.size() - 1 - i);
+			getAcceleration(int(bodies.size()) - 1 - i);
 		}
 
 		for (int i = 0; i < bodies.size(); i++)
