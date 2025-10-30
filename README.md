@@ -2,7 +2,7 @@
 Gravity Particle Simulation with collisions using Barnes-Hut algorithm and SFML. 
 
 # Example
-![](https://i.imgur.com/63JLHxW.gif)
+![](https://i.imgur.com/HdHyp0b.gif)
 
 # Download
 Download a .zip in releases, run the .exe in the bin folder.
