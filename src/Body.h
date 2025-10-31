@@ -2,6 +2,7 @@
 #include "Screen.h"
 #include <SFML/Graphics.hpp>
 #include <iostream>
+#include <math.h>
 
 class alignas(64) Body
 {
